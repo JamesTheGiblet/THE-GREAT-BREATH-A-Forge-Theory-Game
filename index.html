@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>GENESIS-Forge | Multi-Cellular Life</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            color: #e0e0e0;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(100, 200, 255, 0.2);
+            padding: 20px 30px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .title-section h1 {
+            font-size: clamp(24px, 4vw, 32px);
+            font-weight: 700;
+            background: linear-gradient(135deg, #64c8ff 0%, #8a6fff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+        }
+
+        .title-section .subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(100, 200, 255, 0.1);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.paused {
+            background: #ff9800;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 20px;
+        }
+
+        @media (max-width: 1280px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .canvas-section {
+            background: rgba(15, 15, 30, 0.8);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(100, 200, 255, 0.15);
+            position: relative;
+        }
+
+        #rnaCanvas {
+            display: block;
+            width: 100%;
+            height: 600px;
+            cursor: crosshair;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .canvas-overlay div {
+            margin: 3px 0;
+        }
+
+        .graphs-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .graph-panel {
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(100, 200, 255, 0.15);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .graph-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #64c8ff;
+        }
+
+        .mini-canvas {
+            width: 100%;
+            height: 120px;
+            display: block;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(100, 200, 255, 0.15);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #64c8ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .control-buttons button:first-child {
+            grid-column: 1 / -1;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .slider-control {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .slider-value {
+            color: #64c8ff;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(100, 200, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #64c8ff 0%, #8a6fff 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(100, 200, 255, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #64c8ff 0%, #8a6fff 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(100, 200, 255, 0.5);
+        }
+
+        .stat-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(15, 15, 30, 0.5);
+            border-radius: 6px;
+            border-left: 3px solid #64c8ff;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #64c8ff;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(15, 15, 30, 0.5);
+            border-radius: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .legend-label {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .info-panel {
+            background: linear-gradient(135deg, rgba(100, 200, 255, 0.1) 0%, rgba(138, 111, 255, 0.1) 100%);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #bbb;
+        }
+
+        .inspector-panel {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .inspector-content {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .inspector-content .field {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+        }
+
+        .inspector-content .field-label {
+            color: #888;
+        }
+
+        .inspector-content .field-value {
+            color: #64c8ff;
+            font-weight: 600;
+        }
+
+        .sequence-display {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .graphs-section {
+                grid-template-columns: 1fr;
+            }
+
+            .legend-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="title-section">
+                <h1>GENESIS-FORGE</h1>
+                <div class="subtitle">Multi-Cellular Digital Life Engine</div>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Ready</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-layout">
+            <div class="left-column">
+                <div class="canvas-section">
+                    <canvas id="rnaCanvas"></canvas>
+                    <div class="canvas-overlay">
+                        <div>Click organism to inspect</div>
+                        <div id="hoverInfo"></div>
+                    </div>
+                </div>
+
+                <div class="graphs-section">
+                    <div class="graph-panel">
+                        <div class="graph-title">Population Over Time</div>
+                        <canvas id="popGraph" class="mini-canvas"></canvas>
+                    </div>
+                    <div class="graph-panel">
+                        <div class="graph-title">Resources & Waste</div>
+                        <canvas id="resourceGraph" class="mini-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <div class="panel-title">Controls</div>
+                    <div class="control-buttons">
+                        <button id="startBtn">Start Simulation</button>
+                        <button id="pauseBtn" class="secondary" disabled>Pause</button>
+                        <button id="resetBtn" class="danger">Reset</button>
+                    </div>
+
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Simulation Speed</span>
+                            <span class="slider-value" id="speedValue">1x</span>
+                        </div>
+                        <input type="range" id="speedSlider" min="1" max="10" value="5">
+                    </div>
+
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Mutation Rate</span>
+                            <span class="slider-value" id="mutationValue">2%</span>
+                        </div>
+                        <input type="range" id="mutationSlider" min="0" max="10" value="2">
+                    </div>
+
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>Cell Bonding</span>
+                            <span class="slider-value" id="bondingValue">50%</span>
+                        </div>
+                        <input type="range" id="bondingSlider" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">Statistics</div>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Organisms</span>
+                            <span class="stat-value" id="organismCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Cells</span>
+                            <span class="stat-value" id="cellCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg Cells/Organism</span>
+                            <span class="stat-value" id="avgCells">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Deaths</span>
+                            <span class="stat-value" id="deathCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Generation</span>
+                            <span class="stat-value" id="generation">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Runtime</span>
+                            <span class="stat-value" id="runtime">0.0s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel inspector-panel">
+                    <div class="panel-title">Inspector</div>
+                    <div class="inspector-content" id="inspectorContent">
+                        <div style="text-align: center; color: #666; padding: 20px;">
+                            Click an organism to inspect
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">Nucleotides</div>
+                    <div class="legend-grid">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff4757;"></div>
+                            <span class="legend-label">Adenine (A)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #2ed573;"></div>
+                            <span class="legend-label">Uracil (U)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #5352ed;"></div>
+                            <span class="legend-label">Guanine (G)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffa502;"></div>
+                            <span class="legend-label">Cytosine (C)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <strong>Multi-Cellular Life:</strong> Cells can now bond together into organisms. Bonded cells share resources and coordinate behavior. Larger organisms have advantages (resource efficiency) but disadvantages (slower movement, harder to sustain). Watch for emergent cooperation and specialization.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('rnaCanvas');
+        const ctx = canvas.getContext('2d');
+        const popGraph = document.getElementById('popGraph');
+        const popCtx = popGraph.getContext('2d');
+        const resourceGraph = document.getElementById('resourceGraph');
+        const resourceCtx = resourceGraph.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 600;
+            popGraph.width = popGraph.offsetWidth;
+            popGraph.height = 120;
+            resourceGraph.width = resourceGraph.offsetWidth;
+            resourceGraph.height = 120;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Constants
+        const BASES = {
+            'A': '#ff4757',
+            'U': '#2ed573',
+            'G': '#5352ed',
+            'C': '#ffa502'
+        };
+
+        const BASE_PAIRS = {
+            'A': 'U', 'U': 'A',
+            'G': 'C', 'C': 'G'
+        };
+
+        const BASE_DECAY = {
+            'A': 0.003,
+            'U': 0.005,
+            'G': 0.004,
+            'C': 0.006
+        };
+
+        const MOLECULE_TYPES = {
+            GLUCOSE: 'glucose',
+            AMINO_ACID: 'amino',
+            CO2: 'co2',
+            TOXIN: 'toxin'
+        };
+
+        const MOLECULE_COLORS = {
+            glucose: '#ffa502',
+            amino: '#2ed573',
+            co2: '#888888',
+            toxin: '#ff4757'
+        };
+
+        // State
+        let organisms = [];
+        let moleculePools = [];
+        let running = false;
+        let startTime = 0;
+        let elapsedTime = 0;
+        let deathCount = 0;
+        let maxGeneration = 0;
+        let animationId = null;
+        let selectedOrganism = null;
+
+        // History for graphs
+        let populationHistory = [];
+        let resourceHistory = [];
+        const MAX_HISTORY = 200;
+
+        // Parameters
+        let simulationSpeed = 5;
+        let mutationRate = 0.02;
+        let bondingProbability = 0.5;
+
+        // Next organism ID
+        let nextOrganismId = 1;
+
+        // Molecule Pool
+        class MoleculePool {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.amount = 100;
+                this.maxAmount = 100;
+                this.decayRate = 0.001;
+                this.regenRate = (type === MOLECULE_TYPES.CO2 || type === MOLECULE_TYPES.TOXIN) ? 0 : 0.02;
+                this.radius = 25;
+            }
+
+            update() {
+                if (this.amount > 0) {
+                    this.amount *= (1 - this.decayRate);
+                }
+                
+                if (this.regenRate > 0 && this.amount < this.maxAmount) {
+                    this.amount = Math.min(this.maxAmount, this.amount + this.regenRate);
+                }
+                
+                if (this.type === MOLECULE_TYPES.CO2 || this.type === MOLECULE_TYPES.TOXIN) {
+                    this.amount *= 0.998;
+                }
+            }
+
+            draw() {
+                const alpha = Math.min(1, this.amount / this.maxAmount);
+                const color = MOLECULE_COLORS[this.type];
+                const r = parseInt(color.slice(1, 3), 16);
+                const g = parseInt(color.slice(3, 5), 16);
+                const b = parseInt(color.slice(5, 7), 16);
+                
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 2);
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.4})`);
+                gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
+                gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            harvest(amount) {
+                const taken = Math.min(this.amount, amount);
+                this.amount -= taken;
+                return taken;
+            }
+            
+            addWaste(amount) {
+                this.amount = Math.min(this.maxAmount * 2, this.amount + amount);
+            }
+        }
+
+        // PHASE 1: PHYSICS ENGINE - Spatial Grid for collision detection
+        class SpatialGrid {
+            constructor(cellSize) {
+                this.cellSize = cellSize;
+                this.grid = {};
+            }
+
+            clear() {
+                this.grid = {};
+            }
+
+            insert(cell) {
+                const gridX = Math.floor(cell.x / this.cellSize);
+                const gridY = Math.floor(cell.y / this.cellSize);
+                const key = `${gridX},${gridY}`;
+                
+                if (!this.grid[key]) this.grid[key] = [];
+                this.grid[key].push(cell);
+            }
+
+            getNearby(x, y) {
+                const gridX = Math.floor(x / this.cellSize);
+                const gridY = Math.floor(y / this.cellSize);
+                let nearby = [];
+                
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const key = `${gridX + dx},${gridY + dy}`;
+                        if (this.grid[key]) {
+                            nearby.push(...this.grid[key]);
+                        }
+                    }
+                }
+                return nearby;
+            }
+        }
+
+        const spatialGrid = new SpatialGrid(50);
+
+        // PHASE 1: Cell class with full physics
+        class Cell {
+            constructor(x, y, sequence, generation = 0) {
+                this.x = x;
+                this.y = y;
+                this.sequence = sequence;
+                this.generation = generation;
+                this.organism = null;
+                
+                // PHASE 1: Physics properties
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.mass = 1.0;
+                this.radius = 10;
+                
+                // PHASE 1: Material properties
+                this.material = {
+                    density: 1.0,
+                    elasticity: 0.6,
+                    tensileStrength: 50,
+                    friction: 0.95
+                };
+                
+                // Chemistry
+                this.atp = 50;
+                this.maxATP = 100;
+                this.amino = 20;
+                this.maxAmino = 50;
+                this.glucose = 0;
+                this.maxGlucose = 30;
+                this.toxinLoad = 0;
+                this.maxToxinLoad = 50;
+                
+                // PHASE 1: Thermodynamics
+                this.heat = 0;
+                this.temperature = 20; // Celsius
+                
+                this.age = 0;
+                this.replicating = false;
+                this.replicationProgress = 0;
+                this.replicationCooldown = 0;
+                
+                this.calculateMetabolism();
+                this.updateMass();
+            }
+
+            calculateMetabolism() {
+                let totalDecay = 0;
+                let efficiencyScore = 0;
+                
+                for (let base of this.sequence) {
+                    totalDecay += BASE_DECAY[base];
+                    if (base === 'A') efficiencyScore += 2;
+                    if (base === 'G') efficiencyScore += 1.5;
+                    if (base === 'U') efficiencyScore += 1;
+                    if (base === 'C') efficiencyScore += 0.5;
+                }
+                
+                this.decayRate = (totalDecay / this.sequence.length) * 0.005;
+                this.metabolicEfficiency = efficiencyScore / this.sequence.length;
+                this.wasteProduction = 1 / this.metabolicEfficiency;
+            }
+
+            // PHASE 1: Mass calculation from volume and density
+            updateMass() {
+                const volume = Math.PI * this.radius * this.radius; // 2D approximation
+                this.mass = volume * this.material.density;
+            }
+
+            // PHASE 1: Apply force (F = ma)
+            applyForce(forceX, forceY) {
+                const accelX = forceX / this.mass;
+                const accelY = forceY / this.mass;
+                this.velocityX += accelX;
+                this.velocityY += accelY;
+            }
+
+            // PHASE 1: Physics update
+            updatePhysics() {
+                // Apply friction
+                this.velocityX *= this.material.friction;
+                this.velocityY *= this.material.friction;
+                
+                // Update position
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                
+                // Boundary collision
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.velocityX *= -this.material.elasticity;
+                }
+                if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                    this.velocityX *= -this.material.elasticity;
+                }
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.velocityY *= -this.material.elasticity;
+                }
+                if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.velocityY *= -this.material.elasticity;
+                }
+
+                // Movement costs energy
+                const speed = Math.sqrt(this.velocityX * this.velocityX + this.velocityY * this.velocityY);
+                const movementCost = this.mass * speed * 0.02;
+                this.atp -= movementCost;
+            }
+
+            // PHASE 1: Collision detection and response
+            checkCollisions(nearbyCells) {
+                for (let other of nearbyCells) {
+                    if (other === this) continue;
+                    if (other.organism === this.organism) continue; // Don't collide with same organism
+                    
+                    const dx = other.x - this.x;
+                    const dy = other.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const minDistance = this.radius + other.radius;
+                    
+                    if (distance < minDistance && distance > 0) {
+                        // Collision detected
+                        const overlap = minDistance - distance;
+                        const nx = dx / distance;
+                        const ny = dy / distance;
+                        
+                        // Separate cells
+                        const separation = overlap * 0.5;
+                        this.x -= nx * separation;
+                        this.y -= ny * separation;
+                        other.x += nx * separation;
+                        other.y += ny * separation;
+                        
+                        // Calculate relative velocity
+                        const relVelX = other.velocityX - this.velocityX;
+                        const relVelY = other.velocityY - this.velocityY;
+                        const relVelNormal = relVelX * nx + relVelY * ny;
+                        
+                        // Only resolve if moving toward each other
+                        if (relVelNormal < 0) {
+                            // Coefficient of restitution
+                            const restitution = (this.material.elasticity + other.material.elasticity) / 2;
+                            
+                            // Impulse
+                            const impulse = -(1 + restitution) * relVelNormal;
+                            const impulseDivided = impulse / (1/this.mass + 1/other.mass);
+                            
+                            // Apply impulse
+                            this.velocityX -= (impulseDivided / this.mass) * nx;
+                            this.velocityY -= (impulseDivided / this.mass) * ny;
+                            other.velocityX += (impulseDivided / other.mass) * nx;
+                            other.velocityY += (impulseDivided / other.mass) * ny;
+                        }
+                    }
+                }
+            }
+
+            // PHASE 1: Thermodynamics update
+            updateThermodynamics() {
+                // Heat loss (2% per frame)
+                const heatLoss = this.atp * 0.02;
+                this.atp -= heatLoss;
+                this.heat += heatLoss;
+                
+                // Work generates heat
+                const speed = Math.sqrt(this.velocityX * this.velocityX + this.velocityY * this.velocityY);
+                const workHeat = speed * 0.1;
+                this.heat += workHeat;
+                
+                // Metabolic inefficiency produces heat
+                if (this.glucose > 0) {
+                    const wasteHeat = (1 - this.metabolicEfficiency) * 2;
+                    this.heat += wasteHeat;
+                }
+                
+                // Heat dissipates to environment
+                this.heat *= 0.95;
+                
+                // Temperature affects metabolism
+                this.temperature = 20 + (this.heat * 0.5);
+                if (this.temperature > 45) {
+                    // Too hot = damage
+                    this.atp -= 0.5;
+                }
+            }
+
+            update() {
+                this.age++;
+                
+                // PHASE 1: Physics
+                this.updatePhysics();
+                
+                // PHASE 1: Thermodynamics
+                this.updateThermodynamics();
+                
+                // Metabolism
+                if (this.glucose > 0 && this.atp < this.maxATP) {
+                    const glucoseUsed = Math.min(2, this.glucose);
+                    const atpProduced = glucoseUsed * 18 * this.metabolicEfficiency;
+                    this.glucose -= glucoseUsed;
+                    this.atp = Math.min(this.maxATP, this.atp + atpProduced);
+                }
+                
+                // Decay (Forge Theory)
+                this.atp *= (1 - this.decayRate);
+                this.atp -= 0.1;
+                
+                // Entropy maintenance cost
+                const entropyCost = this.mass * 0.01;
+                this.atp -= entropyCost;
+                
+                if (this.toxinLoad > 20) {
+                    this.atp -= 0.2 * (this.toxinLoad / this.maxToxinLoad);
+                }
+                
+                if (this.atp < 0) this.atp = 0;
+                
+                // Detox
+                if (this.toxinLoad > 0 && this.atp > 10) {
+                    const detoxAmount = Math.min(0.5, this.toxinLoad, this.atp * 0.05);
+                    this.toxinLoad -= detoxAmount;
+                    this.atp -= detoxAmount * 0.2;
+                }
+                
+                // Replication cooldown
+                if (this.replicationCooldown > 0) this.replicationCooldown--;
+            }
+
+            draw() {
+                // Draw cell
+                const alpha = this.atp / this.maxATP;
+                
+                // Organism outline
+                if (this.organism && this.organism.cells.length > 1) {
+                    ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Cell body
+                ctx.fillStyle = `rgba(100, 150, 200, ${alpha * 0.8})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = `rgba(100, 200, 255, ${alpha})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // PHASE 1: Heat visualization
+                if (this.heat > 5) {
+                    const heatAlpha = Math.min(0.5, this.heat / 20);
+                    ctx.fillStyle = `rgba(255, 100, 0, ${heatAlpha})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Sequence indicator (tiny dots)
+                const dotSize = 1.5;
+                const startAngle = -Math.PI / 2;
+                for (let i = 0; i < Math.min(8, this.sequence.length); i++) {
+                    const angle = startAngle + (i / 8) * Math.PI * 2;
+                    const dotX = this.x + Math.cos(angle) * (this.radius - 3);
+                    const dotY = this.y + Math.sin(angle) * (this.radius - 3);
+                    ctx.fillStyle = BASES[this.sequence[i]];
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, dotSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            isDead() {
+                return this.atp <= 0 || this.toxinLoad >= this.maxToxinLoad;
+            }
+        }
+
+        // PHASE 1: STRUCTURAL BONDS - Spring physics between cells
+        class Bond {
+            constructor(cell1, cell2) {
+                this.cell1 = cell1;
+                this.cell2 = cell2;
+                this.strength = 15;              // Force to break
+                this.springConstant = 0.3;       // Hooke's law k
+                this.restLength = 22;            // Equilibrium distance
+                this.damping = 0.92;             // Energy dissipation
+                this.broken = false;
+            }
+
+            update() {
+                if (this.broken) return;
+
+                const dx = this.cell2.x - this.cell1.x;
+                const dy = this.cell2.y - this.cell1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance === 0) return;
+
+                // Spring force: F = -k * displacement
+                const displacement = distance - this.restLength;
+                const forceMagnitude = this.springConstant * displacement;
+
+                // Check if bond breaks
+                if (Math.abs(forceMagnitude) > this.strength) {
+                    this.broken = true;
+                    return;
+                }
+
+                // Apply spring forces
+                const forceX = (dx / distance) * forceMagnitude;
+                const forceY = (dy / distance) * forceMagnitude;
+
+                this.cell1.applyForce(forceX, forceY);
+                this.cell2.applyForce(-forceX, -forceY);
+
+                // Damping
+                this.cell1.velocityX *= this.damping;
+                this.cell1.velocityY *= this.damping;
+                this.cell2.velocityX *= this.damping;
+                this.cell2.velocityY *= this.damping;
+            }
+
+            draw() {
+                if (this.broken) return;
+
+                const dx = this.cell2.x - this.cell1.x;
+                const dy = this.cell2.y - this.cell1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const strain = Math.abs(distance - this.restLength) / this.restLength;
+
+                // Color based on strain
+                const r = Math.floor(100 + strain * 155);
+                const g = Math.floor(200 - strain * 100);
+                const b = 255;
+                const alpha = 0.3 + strain * 0.4;
+
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                ctx.lineWidth = 1 + strain * 2;
+                ctx.beginPath();
+                ctx.moveTo(this.cell1.x, this.cell1.y);
+                ctx.lineTo(this.cell2.x, this.cell2.y);
+                ctx.stroke();
+            }
+        }
+
+        // Organism class (collection of cells)
+        class Organism {
+            constructor(initialCell) {
+                this.id = nextOrganismId++;
+                this.cells = [initialCell];
+                initialCell.organism = this;
+                this.centerX = initialCell.x;
+                this.centerY = initialCell.y;
+                
+                // PHASE 1: Bonds between cells
+                this.bonds = [];
+            }
+
+            // PHASE 1: Create bond between two cells
+            createBond(cell1, cell2) {
+                const bond = new Bond(cell1, cell2);
+                this.bonds.push(bond);
+                return bond;
+            }
+
+            update() {
+                // PHASE 1: Update all bonds
+                for (let i = this.bonds.length - 1; i >= 0; i--) {
+                    this.bonds[i].update();
+                    if (this.bonds[i].broken) {
+                        this.bonds.splice(i, 1);
+                    }
+                }
+
+                // PHASE 1: Collision detection using spatial grid
+                spatialGrid.clear();
+                for (let cell of this.cells) {
+                    spatialGrid.insert(cell);
+                }
+
+                // Update cells
+                for (let i = this.cells.length - 1; i >= 0; i--) {
+                    const cell = this.cells[i];
+                    
+                    // PHASE 1: Check collisions with nearby cells
+                    const nearby = spatialGrid.getNearby(cell.x, cell.y);
+                    cell.checkCollisions(nearby);
+                    
+                    cell.update();
+                    
+                    if (cell.isDead()) {
+                        this.cells.splice(i, 1);
+                        deathCount++;
+                    }
+                }
+                
+                // Update center position
+                if (this.cells.length > 0) {
+                    this.centerX = this.cells.reduce((sum, c) => sum + c.x, 0) / this.cells.length;
+                    this.centerY = this.cells.reduce((sum, c) => sum + c.y, 0) / this.cells.length;
+                }
+                
+                // Harvest resources
+                this.harvestResources();
+                
+                // Attempt replication
+                this.attemptReplication();
+                
+                // Share resources among cells
+                this.shareResources();
+            }
+
+            harvestResources() {
+                let targets = { glucose: null, amino: null };
+                let distances = { glucose: Infinity, amino: Infinity };
+                
+                for (let pool of moleculePools) {
+                    const dx = pool.x - this.centerX;
+                    const dy = pool.y - this.centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (pool.type === MOLECULE_TYPES.GLUCOSE && dist < distances.glucose && pool.amount > 0) {
+                        distances.glucose = dist;
+                        targets.glucose = pool;
+                    }
+                    
+                    if (pool.type === MOLECULE_TYPES.AMINO_ACID && dist < distances.amino && pool.amount > 0) {
+                        distances.amino = dist;
+                        targets.amino = pool;
+                    }
+                }
+
+                let primaryTarget = null;
+                let minDist = Infinity;
+                
+                const avgGlucose = this.cells.reduce((sum, c) => sum + c.glucose, 0) / this.cells.length;
+                const avgAmino = this.cells.reduce((sum, c) => sum + c.amino, 0) / this.cells.length;
+                
+                if (avgGlucose < 10 && targets.glucose) {
+                    primaryTarget = targets.glucose;
+                    minDist = distances.glucose;
+                } else if (avgAmino < 20 && targets.amino) {
+                    primaryTarget = targets.amino;
+                    minDist = distances.amino;
+                } else if (targets.glucose) {
+                    primaryTarget = targets.glucose;
+                    minDist = distances.glucose;
+                }
+
+                if (primaryTarget && minDist < 60) {
+                    const harvested = primaryTarget.harvest(2 * this.cells.length);
+                    
+                    // Distribute to cells
+                    for (let cell of this.cells) {
+                        if (primaryTarget.type === MOLECULE_TYPES.GLUCOSE) {
+                            cell.glucose = Math.min(cell.maxGlucose, cell.glucose + harvested / this.cells.length);
+                        } else if (primaryTarget.type === MOLECULE_TYPES.AMINO_ACID) {
+                            cell.amino = Math.min(cell.maxAmino, cell.amino + harvested / this.cells.length);
+                        }
+                    }
+                }
+
+                // PHASE 1: Physics-based movement toward resources
+                if (primaryTarget && minDist > 60) {
+                    const dx = primaryTarget.x - this.centerX;
+                    const dy = primaryTarget.y - this.centerY;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Apply force to all cells toward target
+                    const forceMagnitude = 0.5 / Math.sqrt(this.cells.length);
+                    for (let cell of this.cells) {
+                        cell.applyForce(
+                            Math.cos(angle) * forceMagnitude,
+                            Math.sin(angle) * forceMagnitude
+                        );
+                    }
+                }
+            }
+
+            shareResources() {
+                // Cells in organism share resources
+                if (this.cells.length < 2) return;
+                
+                const totalATP = this.cells.reduce((sum, c) => sum + c.atp, 0);
+                const totalAmino = this.cells.reduce((sum, c) => sum + c.amino, 0);
+                const avgATP = totalATP / this.cells.length;
+                const avgAmino = totalAmino / this.cells.length;
+                
+                for (let cell of this.cells) {
+                    cell.atp = cell.atp * 0.8 + avgATP * 0.2; // Gradual equalization
+                    cell.amino = cell.amino * 0.8 + avgAmino * 0.2;
+                }
+            }
+
+            attemptReplication() {
+                // Find cell ready to replicate
+                for (let cell of this.cells) {
+                    if (cell.replicating || cell.replicationCooldown > 0) continue;
+                    
+                    if (cell.atp > 40 && cell.amino > 20 && cell.toxinLoad < 30 && cell.age > 60) {
+                        cell.replicating = true;
+                        cell.replicationProgress = 0;
+                        
+                        // Create new cell
+                        setTimeout(() => {
+                            if (this.cells.includes(cell)) {
+                                let complementSequence = '';
+                                for (let base of cell.sequence) {
+                                    let newBase = BASE_PAIRS[base];
+                                    if (Math.random() < mutationRate) {
+                                        const baseArray = Object.keys(BASES);
+                                        newBase = baseArray[Math.floor(Math.random() * baseArray.length)];
+                                    }
+                                    complementSequence += newBase;
+                                }
+                                
+                                const angle = Math.random() * Math.PI * 2;
+                                const distance = 20;
+                                const newCell = new Cell(
+                                    cell.x + Math.cos(angle) * distance,
+                                    cell.y + Math.sin(angle) * distance,
+                                    complementSequence,
+                                    cell.generation + 1
+                                );
+                                newCell.atp = 25;
+                                newCell.amino = 10;
+                                
+                                // Decide if new cell bonds to organism
+                                if (Math.random() < bondingProbability && this.cells.length < 20) {
+                                    // Bond to this organism
+                                    this.cells.push(newCell);
+                                    newCell.organism = this;
+                                    
+                                    // PHASE 1: Create structural bond
+                                    this.createBond(cell, newCell);
+                                    
+                                    // Create bonds with nearby cells
+                                    for (let otherCell of this.cells) {
+                                        if (otherCell === newCell || otherCell === cell) continue;
+                                        const dx = otherCell.x - newCell.x;
+                                        const dy = otherCell.y - newCell.y;
+                                        const dist = Math.sqrt(dx * dx + dy * dy);
+                                        if (dist < 30 && Math.random() < 0.5) {
+                                            this.createBond(newCell, otherCell);
+                                        }
+                                    }
+                                } else {
+                                    // Create new single-cell organism
+                                    const newOrganism = new Organism(newCell);
+                                    organisms.push(newOrganism);
+                                }
+                                
+                                cell.replicating = false;
+                                cell.replicationCooldown = 120;
+                                cell.atp -= 30;
+                                cell.amino -= 15;
+                                cell.toxinLoad += 2;
+                                
+                                maxGeneration = Math.max(maxGeneration, newCell.generation);
+                            }
+                        }, 100);
+                        
+                        break; // Only one replication per update
+                    }
+                }
+            }
+
+            draw() {
+                // PHASE 1: Draw bonds first
+                for (let bond of this.bonds) {
+                    bond.draw();
+                }
+                
+                // Draw cells
+                for (let cell of this.cells) {
+                    cell.draw();
+                }
+                
+                // Highlight if selected
+                if (selectedOrganism === this) {
+                    ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    const radius = Math.max(...this.cells.map(c => {
+                        const dx = c.x - this.centerX;
+                        const dy = c.y - this.centerY;
+                        return Math.sqrt(dx * dx + dy * dy);
+                    })) + 15;
+                    ctx.arc(this.centerX, this.centerY, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            isDead() {
+                return this.cells.length === 0;
+            }
+
+            contains(x, y) {
+                for (let cell of this.cells) {
+                    const dx = x - cell.x;
+                    const dy = y - cell.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < cell.radius) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        function generateRandomSequence(length) {
+            const baseArray = Object.keys(BASES);
+            let sequence = '';
+            for (let i = 0; i < length; i++) {
+                sequence += baseArray[Math.floor(Math.random() * baseArray.length)];
+            }
+            return sequence;
+        }
+
+        function init() {
+            organisms = [];
+            moleculePools = [];
+            populationHistory = [];
+            resourceHistory = [];
+            selectedOrganism = null;
+            
+            const initialCell = new Cell(
+                canvas.width / 2,
+                canvas.height / 2,
+                generateRandomSequence(20),
+                0
+            );
+            initialCell.atp = 50;
+            initialCell.amino = 20;
+            
+            const initialOrganism = new Organism(initialCell);
+            organisms.push(initialOrganism);
+            
+            // Create resource pools
+            for (let i = 0; i < 5; i++) {
+                moleculePools.push(new MoleculePool(
+                    Math.random() * (canvas.width - 80) + 40,
+                    Math.random() * (canvas.height - 80) + 40,
+                    MOLECULE_TYPES.GLUCOSE
+                ));
+            }
+            
+            for (let i = 0; i < 3; i++) {
+                moleculePools.push(new MoleculePool(
+                    Math.random() * (canvas.width - 80) + 40,
+                    Math.random() * (canvas.height - 80) + 40,
+                    MOLECULE_TYPES.AMINO_ACID
+                ));
+            }
+            
+            deathCount = 0;
+            maxGeneration = 0;
+            elapsedTime = 0;
+            nextOrganismId = 1;
+            updateStats();
+            updateInspector();
+        }
+
+        function animate() {
+            if (!running) return;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#0a0a1a');
+            gradient.addColorStop(1, '#1a1a2e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(100, 200, 255, 0.05)';
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Update and draw pools
+            for (let pool of moleculePools) {
+                pool.update();
+                pool.draw();
+            }
+
+            // Update and draw organisms
+            for (let i = organisms.length - 1; i >= 0; i--) {
+                const organism = organisms[i];
+                organism.update();
+                
+                if (organism.isDead()) {
+                    if (selectedOrganism === organism) {
+                        selectedOrganism = null;
+                        updateInspector();
+                    }
+                    organisms.splice(i, 1);
+                } else {
+                    organism.draw();
+                }
+            }
+
+            // Check extinction
+            if (organisms.length === 0) {
+                running = false;
+                if (animationId) cancelAnimationFrame(animationId);
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                updateStatusIndicator('paused', 'Extinction Event');
+            }
+
+            elapsedTime = (Date.now() - startTime) / 1000;
+            updateStats();
+            updateGraphs();
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function updateStats() {
+            const totalCells = organisms.reduce((sum, o) => sum + o.cells.length, 0);
+            const avgCells = organisms.length > 0 ? (totalCells / organisms.length).toFixed(1) : 0;
+            
+            document.getElementById('organismCount').textContent = organisms.length;
+            document.getElementById('cellCount').textContent = totalCells;
+            document.getElementById('avgCells').textContent = avgCells;
+            document.getElementById('deathCount').textContent = deathCount;
+            document.getElementById('generation').textContent = maxGeneration;
+            document.getElementById('runtime').textContent = elapsedTime.toFixed(1) + 's';
+        }
+
+        function updateGraphs() {
+            // Record history
+            const totalCells = organisms.reduce((sum, o) => sum + o.cells.length, 0);
+            populationHistory.push({
+                organisms: organisms.length,
+                cells: totalCells
+            });
+            if (populationHistory.length > MAX_HISTORY) populationHistory.shift();
+            
+            const glucose = moleculePools.filter(p => p.type === MOLECULE_TYPES.GLUCOSE).reduce((sum, p) => sum + p.amount, 0);
+            const toxins = moleculePools.filter(p => p.type === MOLECULE_TYPES.TOXIN).reduce((sum, p) => sum + p.amount, 0);
+            resourceHistory.push({ glucose, toxins });
+            if (resourceHistory.length > MAX_HISTORY) resourceHistory.shift();
+            
+            // Draw population graph
+            popCtx.fillStyle = '#0a0a1a';
+            popCtx.fillRect(0, 0, popGraph.width, popGraph.height);
+            
+            if (populationHistory.length > 1) {
+                const maxOrg = Math.max(...populationHistory.map(p => p.organisms), 1);
+                const maxCell = Math.max(...populationHistory.map(p => p.cells), 1);
+                
+                // Organisms line
+                popCtx.strokeStyle = '#64c8ff';
+                popCtx.lineWidth = 2;
+                popCtx.beginPath();
+                populationHistory.forEach((p, i) => {
+                    const x = (i / MAX_HISTORY) * popGraph.width;
+                    const y = popGraph.height - (p.organisms / maxOrg) * popGraph.height;
+                    if (i === 0) popCtx.moveTo(x, y);
+                    else popCtx.lineTo(x, y);
+                });
+                popCtx.stroke();
+                
+                // Cells line
+                popCtx.strokeStyle = '#2ed573';
+                popCtx.lineWidth = 2;
+                popCtx.beginPath();
+                populationHistory.forEach((p, i) => {
+                    const x = (i / MAX_HISTORY) * popGraph.width;
+                    const y = popGraph.height - (p.cells / maxCell) * popGraph.height;
+                    if (i === 0) popCtx.moveTo(x, y);
+                    else popCtx.lineTo(x, y);
+                });
+                popCtx.stroke();
+            }
+            
+            // Draw resource graph
+            resourceCtx.fillStyle = '#0a0a1a';
+            resourceCtx.fillRect(0, 0, resourceGraph.width, resourceGraph.height);
+            
+            if (resourceHistory.length > 1) {
+                const maxResource = Math.max(...resourceHistory.map(r => Math.max(r.glucose, r.toxins)), 1);
+                
+                // Glucose line
+                resourceCtx.strokeStyle = '#ffa502';
+                resourceCtx.lineWidth = 2;
+                resourceCtx.beginPath();
+                resourceHistory.forEach((r, i) => {
+                    const x = (i / MAX_HISTORY) * resourceGraph.width;
+                    const y = resourceGraph.height - (r.glucose / maxResource) * resourceGraph.height;
+                    if (i === 0) resourceCtx.moveTo(x, y);
+                    else resourceCtx.lineTo(x, y);
+                });
+                resourceCtx.stroke();
+                
+                // Toxins line
+                resourceCtx.strokeStyle = '#ff4757';
+                resourceCtx.lineWidth = 2;
+                resourceCtx.beginPath();
+                resourceHistory.forEach((r, i) => {
+                    const x = (i / MAX_HISTORY) * resourceGraph.width;
+                    const y = resourceGraph.height - (r.toxins / maxResource) * resourceGraph.height;
+                    if (i === 0) resourceCtx.moveTo(x, y);
+                    else resourceCtx.lineTo(x, y);
+                });
+                resourceCtx.stroke();
+            }
+        }
+
+        function updateInspector() {
+            const content = document.getElementById('inspectorContent');
+            
+            if (!selectedOrganism || !organisms.includes(selectedOrganism)) {
+                content.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Click an organism to inspect</div>';
+                return;
+            }
+            
+            const org = selectedOrganism;
+            const avgATP = org.cells.reduce((sum, c) => sum + c.atp, 0) / org.cells.length;
+            const avgAmino = org.cells.reduce((sum, c) => sum + c.amino, 0) / org.cells.length;
+            const avgToxin = org.cells.reduce((sum, c) => sum + c.toxinLoad, 0) / org.cells.length;
+            const avgGen = org.cells.reduce((sum, c) => sum + c.generation, 0) / org.cells.length;
+            
+            // Get consensus sequence (most common bases)
+            let consensusSeq = '';
+            if (org.cells.length > 0) {
+                const seqLength = org.cells[0].sequence.length;
+                for (let i = 0; i < seqLength; i++) {
+                    const bases = org.cells.map(c => c.sequence[i]);
+                    const counts = {};
+                    bases.forEach(b => counts[b] = (counts[b] || 0) + 1);
+                    const mostCommon = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                    consensusSeq += `<span style="color: ${BASES[mostCommon]}">${mostCommon}</span>`;
+                }
+            }
+            
+            content.innerHTML = `
+                <div class="field">
+                    <span class="field-label">Organism ID:</span>
+                    <span class="field-value">#${org.id}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Cell Count:</span>
+                    <span class="field-value">${org.cells.length}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Avg Generation:</span>
+                    <span class="field-value">${avgGen.toFixed(1)}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Avg ATP:</span>
+                    <span class="field-value">${avgATP.toFixed(1)}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Avg Amino:</span>
+                    <span class="field-value">${avgAmino.toFixed(1)}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Avg Toxin:</span>
+                    <span class="field-value">${avgToxin.toFixed(1)}</span>
+                </div>
+                <div class="field">
+                    <span class="field-label">Position:</span>
+                    <span class="field-value">(${org.centerX.toFixed(0)}, ${org.centerY.toFixed(0)})</span>
+                </div>
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(100, 200, 255, 0.2);">
+                    <div style="color: #888; margin-bottom: 5px; font-size: 11px;">Consensus Sequence:</div>
+                    <div class="sequence-display">${consensusSeq}</div>
+                </div>
+            `;
+        }
+
+        function updateStatusIndicator(status, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            dot.className = 'status-dot' + (status === 'paused' ? ' paused' : '');
+            statusText.textContent = text;
+        }
+
+        // Canvas click handler
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            selectedOrganism = null;
+            for (let organism of organisms) {
+                if (organism.contains(x, y)) {
+                    selectedOrganism = organism;
+                    break;
+                }
+            }
+            
+            updateInspector();
+        });
+
+        // Controls
+        document.getElementById('startBtn').addEventListener('click', () => {
+            if (!running) {
+                running = true;
+                startTime = Date.now() - (elapsedTime * 1000);
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                updateStatusIndicator('running', 'Simulation Running');
+                animate();
+            }
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            running = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            updateStatusIndicator('paused', 'Paused');
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            running = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            updateStatusIndicator('paused', 'Ready');
+            init();
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            simulationSpeed = parseInt(e.target.value);
+            document.getElementById('speedValue').textContent = (simulationSpeed / 5).toFixed(1) + 'x';
+        });
+
+        document.getElementById('mutationSlider').addEventListener('input', (e) => {
+            mutationRate = parseInt(e.target.value) / 100;
+            document.getElementById('mutationValue').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('bondingSlider').addEventListener('input', (e) => {
+            bondingProbability = parseInt(e.target.value) / 100;
+            document.getElementById('bondingValue').textContent = e.target.value + '%';
+        });
+
+        init();
+    </script>
+</body>
+</html>
